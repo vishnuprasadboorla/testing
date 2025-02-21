@@ -1,0 +1,180 @@
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+const simpleGit = require("simple-git");
+const fs = require("fs");
+const multer = require("multer");
+const path = require("path");
+
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
+
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GITHUB_USERNAME = process.env.GITHUB_USERNAME;
+const GITHUB_API_URL = "https://api.github.com";
+const git = simpleGit();
+const upload = multer({ dest: "uploads/" });
+
+const REPO_BASE_PATH = process.env.REPO_BASE_PATH;
+
+// Ensure the repo directory exists
+if (!fs.existsSync(REPO_BASE_PATH)) {
+    fs.mkdirSync(REPO_BASE_PATH, { recursive: true });
+}
+
+// 🔹 Clone Repository
+app.post("/add-repo", async (req, res) => {
+    const { repoUrl } = req.body;
+    if (!repoUrl) {
+        return res.status(400).json({ success: false, message: "Repository URL is required." });
+    }
+
+    const repoName = repoUrl.split("/").pop().replace(".git", "");
+    const repoPath = path.join(REPO_BASE_PATH, repoName);
+
+    try {
+        if (fs.existsSync(repoPath)) {
+            return res.json({ success: false, message: "Repository already exists." });
+        }
+
+        await git.clone(repoUrl, repoPath);
+        res.json({ success: true, message: "Repository added successfully." });
+    } catch (error) {
+        console.error("Error cloning repository:", error);
+        res.status(500).json({ success: false, error: "Failed to clone repository." });
+    }
+});
+
+// 🔹 List All Repositories
+app.get("/list-repos", (req, res) => {
+    try {
+        const repos = fs.readdirSync(REPO_BASE_PATH).filter(repo => fs.lstatSync(path.join(REPO_BASE_PATH, repo)).isDirectory());
+        res.json({ success: true, repos });
+    } catch (error) {
+        console.error("Error listing repositories:", error);
+        res.status(500).json({ error: "Failed to list repositories" });
+    }
+});
+
+// 🔹 Recursive File Listing
+const getFilesRecursively = (dir) => {
+    let results = [];
+    const list = fs.readdirSync(dir);
+
+    list.forEach((file) => {
+        const filePath = path.join(dir, file);
+        const stat = fs.statSync(filePath);
+
+        if (stat.isDirectory() && !file.startsWith(".")) {
+            results.push({ name: file, path: filePath, type: "folder", children: getFilesRecursively(filePath) });
+        } else if (stat.isFile()) {
+            results.push({ name: file, path: filePath, type: "file" });
+        }
+    });
+
+    return results;
+};
+
+// 🔹 Get Repository Files
+app.get("/repo-files", (req, res) => {
+    const { repoName } = req.query;
+    if (!repoName) {
+        return res.status(400).json({ success: false, message: "Repository name is required." });
+    }
+
+    const repoPath = path.join(REPO_BASE_PATH, repoName);
+    if (!fs.existsSync(repoPath)) {
+        return res.status(404).json({ success: false, message: "Repository not found." });
+    }
+
+    try {
+        const files = getFilesRecursively(repoPath);
+        res.json({ success: true, files });
+    } catch (error) {
+        console.error("Error listing repo files:", error);
+        res.status(500).json({ success: false, error: "Failed to list repository files." });
+    }
+});
+
+// 🔹 Fetch File Content Securely
+app.get("/file-content", (req, res) => {
+    const { repoName, filePath } = req.query;
+    if (!repoName || !filePath) {
+        return res.status(400).json({ success: false, error: "Missing parameters!" });
+    }
+
+    const decodedFilePath = decodeURIComponent(filePath);
+    const repoBasePath = path.join(REPO_BASE_PATH, repoName);
+    const fullPath = path.normalize(path.join(repoBasePath, decodedFilePath.replace(/^\/+/g, "")));
+
+    if (!fullPath.startsWith(repoBasePath)) {
+        return res.status(400).json({ success: false, error: "Invalid file path!" });
+    }
+
+    try {
+        if (!fs.existsSync(fullPath)) {
+            return res.status(404).json({ success: false, error: "File not found!" });
+        }
+        const content = fs.readFileSync(fullPath, "utf8");
+        res.json({ success: true, content });
+    } catch (error) {
+        console.error("Error reading file:", error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// 🔹 Save Edited File Securely
+app.post("/save-file", (req, res) => {
+    const { repoName, filePath, content } = req.body;
+    if (!repoName || !filePath || content === undefined) {
+        return res.status(400).json({ success: false, error: "Missing parameters!" });
+    }
+
+    const repoBasePath = path.join(REPO_BASE_PATH, repoName);
+    const fileFullPath = path.normalize(path.join(repoBasePath, filePath.replace(/^\/+/g, "")));
+
+    if (!fileFullPath.startsWith(repoBasePath)) {
+        return res.status(400).json({ success: false, error: "Invalid file path!" });
+    }
+
+    try {
+        fs.writeFileSync(fileFullPath, content, "utf-8");
+        res.json({ success: true, message: "File saved successfully." });
+    } catch (error) {
+        console.error("Error saving file:", error);
+        res.status(500).json({ success: false, error: "Failed to save file." });
+    }
+});
+
+// 🔹 Commit & Push Changes Securely
+app.post("/commit-push", async (req, res) => {
+    const { repoName, commitMessage } = req.body;
+    if (!repoName || !commitMessage) {
+        return res.status(400).json({ success: false, error: "Missing parameters!" });
+    }
+
+    const repoPath = path.join(REPO_BASE_PATH, repoName);
+    if (!fs.existsSync(repoPath)) {
+        return res.status(404).json({ success: false, error: "Repository not found!" });
+    }
+
+    try {
+        await git.cwd(repoPath);
+        await git.add(".");
+        await git.commit(commitMessage);
+
+        const branch = (await git.branch()).current;
+        await git.push("origin", branch);
+
+        res.json({ success: true, message: "Changes committed & pushed successfully." });
+    } catch (error) {
+        console.error("Git Push Error:", error);
+        res.status(500).json({ success: false, error: "Failed to commit and push changes." });
+    }
+});
+
+// 🔹 Start Server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));
