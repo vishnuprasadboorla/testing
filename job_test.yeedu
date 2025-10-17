@@ -1,0 +1,49 @@
+{
+  "jobs": [
+    {
+      "name": "job_test",
+      "spark_job_type": {
+        "job_type": "SPARK_SQL",
+        "language": "SQL"
+      },
+      "cluster_info": {
+        "cluster_name": "aws_glue_cluster",
+        "cluster_type": "YEEDU"
+      },
+      "max_concurrency": 0,
+      "files": [],
+      "properties_file": null,
+      "conf": [],
+      "packages": [],
+      "repositories": [],
+      "jars": [],
+      "archives": [],
+      "driver_memory": null,
+      "driver_java_options": null,
+      "driver_library_path": null,
+      "driver_class_path": null,
+      "executor_memory": null,
+      "principal": null,
+      "keytab": null,
+      "queue": null,
+      "job_class_name": null,
+      "job_command": null,
+      "job_arguments": null,
+      "job_rawScalaCode": "select (1+1)\n",
+      "job_timeout_min": null,
+      "driver_cores": null,
+      "total_executor_cores": null,
+      "executor_cores": null,
+      "num_executors": null,
+      "should_append_params": false,
+      "yeedu_functions_project_path": null,
+      "yeedu_functions_script_path": null,
+      "yeedu_functions_function_name": null,
+      "yeedu_functions_requirements": null,
+      "yeedu_functions_max_request_concurrency": null,
+      "yeedu_functions_request_timeout_sec": null,
+      "yeedu_functions_idle_timeout_sec": null,
+      "yeedu_functions_example_request_body": null
+    }
+  ]
+}

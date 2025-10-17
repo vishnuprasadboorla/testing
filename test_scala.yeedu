@@ -1,0 +1,49 @@
+{
+  "jobs": [
+    {
+      "name": "test_scala",
+      "spark_job_type": {
+        "job_type": "SPARK_JOB",
+        "language": "RAW_SCALA"
+      },
+      "cluster_info": {
+        "cluster_name": "aws_unity_cluster",
+        "cluster_type": "YEEDU"
+      },
+      "max_concurrency": 0,
+      "files": [],
+      "properties_file": null,
+      "conf": [],
+      "packages": [],
+      "repositories": [],
+      "jars": [],
+      "archives": [],
+      "driver_memory": null,
+      "driver_java_options": null,
+      "driver_library_path": null,
+      "driver_class_path": null,
+      "executor_memory": null,
+      "principal": null,
+      "keytab": null,
+      "queue": null,
+      "job_class_name": null,
+      "job_command": null,
+      "job_arguments": null,
+      "job_rawScalaCode": "object LongRunningJob {\n  def main(args: Array[String]): Unit = {\n    println(\"Starting long-running Yeedu job...\")\n\n    var counter = 0\n    // Run for a long time (simulate heavy processing)\n    while (true) {\n      counter += 1\n      println(s\"dwvfeegtf - iteration: $counter\")\n\n      // Sleep for 5 seconds between prints\n      Thread.sleep(5000)\n    }\n  }\n}\n\n",
+      "job_timeout_min": null,
+      "driver_cores": null,
+      "total_executor_cores": null,
+      "executor_cores": null,
+      "num_executors": null,
+      "should_append_params": false,
+      "yeedu_functions_project_path": null,
+      "yeedu_functions_script_path": null,
+      "yeedu_functions_function_name": null,
+      "yeedu_functions_requirements": null,
+      "yeedu_functions_max_request_concurrency": null,
+      "yeedu_functions_request_timeout_sec": null,
+      "yeedu_functions_idle_timeout_sec": null,
+      "yeedu_functions_example_request_body": null
+    }
+  ]
+}
