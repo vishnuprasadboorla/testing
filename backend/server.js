@@ -310,6 +310,6 @@ app.post("/commit-push", async (req, res) => {
 
 // 🔹 Start Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server runn on http://localhost:${PORT}, please check`));
 
 // UI is displaying as per the way I want             ---> this displays branches in options and on selecting and commit and push button it pushes the changes to the MAIN branch instred of the selected branch
